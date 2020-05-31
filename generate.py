@@ -99,7 +99,16 @@ class CrosswordCreator():
         (Remove any values that are inconsistent with a variable's unary
          constraints; in this case, the length of the word.)
         """
-        raise NotImplementedError
+
+        # Iterate through all variables in the crossword
+        for var in self.domains:
+            var_len = var.length
+
+            # Iterate through all values in the variable's domain
+            for val in self.domains[var]:
+                # If value length does not match variable length, remove value from domain
+                if len(val) != var_len:
+                    self.domains[var].remove(val)
 
     def revise(self, x, y):
         """
@@ -110,7 +119,46 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        raise NotImplementedError
+
+        def overlap_satisfied(x, y, var_x, var_y):
+            """
+            Helper function that returns true if var_x and var_y
+            satisfy any overlap arc consistency requirement.
+
+            Returns True if consistency is satisfied, False otherwise.
+            """
+
+            # If no overlap, no arc consistency to satisfy
+            if not self.crossword.overlaps[x, y]:
+                return True
+
+            # Otherwise check that letters match at overlapping indices
+            else:
+                x_index, y_index = self.crossword.overlaps[x,y]
+
+                if var_x[x_index] == var_y[y_index]:
+                    return True
+                else:
+                    return False
+
+        revision = False
+        to_remove = set()
+
+        # Iterate over domain of x and y, track any inconsistent x variables:
+        for var_x in self.domains[x]:
+            consistent = False
+            for var_y in self.domains[y]:
+                if var_x != var_y and overlap_satisfied(x, y, var_x, var_y):
+                    consistent = True
+                    break
+
+            if not consistent:
+                to_remove.add(var_x)
+                revision = True
+
+        # Remove any domain variables that aren't arc consistent:
+        self.domains[x] = self.domains[x] - to_remove
+        return revision
 
     def ac3(self, arcs=None):
         """
