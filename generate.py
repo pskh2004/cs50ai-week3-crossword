@@ -2,6 +2,7 @@ import sys
 
 from math import inf
 from crossword import *
+from copy import deepcopy
 
 BACKTRACK_COUNTER = 0
 WORDS_TESTED = 0
@@ -88,13 +89,18 @@ class CrosswordCreator():
 
         img.save(filename)
 
-    def solve(self):
+    def solve(self, interleaving):
         """
         Enforce node and arc consistency, and then solve the CSP.
         """
         self.enforce_node_consistency()
         self.ac3()
-        return self.backtrack(dict())
+        if not interleaving:
+            print('Solving Crossword with single arc consistency enforcement...')
+            return self.backtrack(dict())
+        else:
+            print('Solving Crossword with interleaved backtracking and arc consistency enforcement...')
+            return self.backtrack_ac3(dict())
 
     def enforce_node_consistency(self):
         """
@@ -322,21 +328,62 @@ class CrosswordCreator():
             del assignment[var]
         return None
 
+    def backtrack_ac3(self, assignment):
+        """
+        Using Backtracking Search, take as input a partial assignment for the
+        crossword and return a complete assignment if possible to do so.
+
+        Interleaves backtracking search with inference using ac3, to reduce
+        the domains of each variable as assignments are made.
+
+        `assignment` is a mapping from variables (keys) to words (values).
+
+        If no assignment is possible, return None.
+        """
+
+        global BACKTRACK_COUNTER
+        global WORDS_TESTED
+        BACKTRACK_COUNTER += 1
+
+        # If all variables are assigned, return assignment:
+        if self.assignment_complete(assignment):
+            return assignment
+
+        # Otherwise select an unassigned variable:
+        var = self.select_unassigned_variable(assignment)
+        pre_assignment_domains = deepcopy(self.domains)
+        for val in self.order_domain_values(var, assignment):
+            assignment[var] = val
+            WORDS_TESTED += 1
+            if self.consistent(assignment):
+                # Update variable domain to be assigned value
+                self.domains[var] = {val}
+                # Use ac3 to remove inconcistent values from neighbouring variables
+                self.ac3([(other_var, var) for other_var in self.crossword.neighbors(var)])
+                result = self.backtrack_ac3(assignment)
+                if result:
+                    return result
+            # If assignment does not produce solution, remove assignment and reset domains
+            del assignment[var]
+            self.domains = pre_assignment_domains
+        return None
+
 def main():
 
     # Check usage
-    if len(sys.argv) not in [3, 4]:
-        sys.exit("Usage: python generate.py structure words [output]")
+    if len(sys.argv) not in [3, 4, 5]:
+        sys.exit("Usage: python generate.py structure words [interleaving] [output]")
 
     # Parse command-line arguments
     structure = sys.argv[1]
     words = sys.argv[2]
-    output = sys.argv[3] if len(sys.argv) == 4 else None
+    interleaving = sys.argv[3] == 'True'
+    output = sys.argv[4] if len(sys.argv) == 5 else None
 
     # Generate crossword
     crossword = Crossword(structure, words)
     creator = CrosswordCreator(crossword)
-    assignment = creator.solve()
+    assignment = creator.solve(interleaving)
 
     # Print result
     if assignment is None:
