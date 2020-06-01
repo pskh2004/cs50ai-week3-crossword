@@ -250,8 +250,24 @@ class CrosswordCreator():
         that rules out the fewest values among the neighbors of `var`.
         """
 
-        # CURRENTLY RETURN IN ANY ORDER:
-        return [x for x in self.domains[var]]
+        vals_ruleout = {val: 0 for val in self.domains[var]}
+
+        # Iterate through all possible values of var:
+        for val in self.domains[var]:
+
+            # Iterate through neighboring variables and values:
+            for other_var in self.crossword.neighbors(var):
+                for other_val in self.domains[other_var]:
+
+                    # If val rules out other val, add to ruled_out count
+                    if not self.overlap_satisfied(var, other_var, val, other_val):
+                        vals_ruleout[val] += 1
+
+        # Return list of vals sorted from fewest to most other_vals ruled out:
+        return sorted([x for x in vals_ruleout], key = lambda x: vals_ruleout[x])
+
+        # SIMPLE, INEFFICIENT - RETURN IN ANY ORDER:
+        #return [x for x in self.domains[var]]
 
     def select_unassigned_variable(self, assignment):
         """
@@ -268,12 +284,10 @@ class CrosswordCreator():
         result = [var for var in unassigned]
         result.sort(key = lambda x: (len(self.domains[x]), -len(self.crossword.neighbors(x))))
 
-        #for var in unassigned:
-            #print(var, self.domains[var], self.crossword.neighbors(var))
-
-        #print(result)
-
         return result[0]
+
+        # SIMPLE, INEFFICIENT - RETURN ANY VARIABLE:
+        # return [var for var in unassigned][0]
 
     def backtrack(self, assignment):
         """
