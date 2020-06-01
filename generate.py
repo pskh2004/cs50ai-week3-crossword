@@ -110,20 +110,11 @@ class CrosswordCreator():
                 if len(val) != var_len:
                     self.domains[var].remove(val)
 
-    def revise(self, x, y):
-        """
-        Make variable `x` arc consistent with variable `y`.
-        To do so, remove values from `self.domains[x]` for which there is no
-        possible corresponding value for `y` in `self.domains[y]`.
-
-        Return True if a revision was made to the domain of `x`; return
-        False if no revision was made.
-        """
-
-        def overlap_satisfied(x, y, var_x, var_y):
+    def overlap_satisfied(self, x, y, val_x, val_y):
             """
-            Helper function that returns true if var_x and var_y
-            satisfy any overlap arc consistency requirement.
+            Helper function that returns true if val_x and val_y
+            satisfy any overlap arc consistency requirement for
+            variables x and y.
 
             Returns True if consistency is satisfied, False otherwise.
             """
@@ -136,19 +127,29 @@ class CrosswordCreator():
             else:
                 x_index, y_index = self.crossword.overlaps[x,y]
 
-                if var_x[x_index] == var_y[y_index]:
+                if val_x[x_index] == val_y[y_index]:
                     return True
                 else:
                     return False
 
+    def revise(self, x, y):
+        """
+        Make variable `x` arc consistent with variable `y`.
+        To do so, remove values from `self.domains[x]` for which there is no
+        possible corresponding value for `y` in `self.domains[y]`.
+
+        Return True if a revision was made to the domain of `x`; return
+        False if no revision was made.
+        """
+
         revision = False
         to_remove = set()
 
-        # Iterate over domain of x and y, track any inconsistent x variables:
+        # Iterate over domain of x and y, track any inconsistent x:
         for var_x in self.domains[x]:
             consistent = False
             for var_y in self.domains[y]:
-                if var_x != var_y and overlap_satisfied(x, y, var_x, var_y):
+                if var_x != var_y and self.overlap_satisfied(x, y, var_x, var_y):
                     consistent = True
                     break
 
@@ -169,21 +170,70 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        raise NotImplementedError
+
+        # If no arcs, start with queue of all arcs:
+        if not arcs:
+            arcs = []
+            for var_1 in self.domains:
+                for var_2 in self.domains:
+                    if var_1 != var_2:
+                        arcs.append((var_1, var_2))
+
+        # Continue until no arcs left (arc consistency enforced):
+        while arcs.length > 0:
+            var_x, var_y = arcs.pop()
+            # Revise x domain wrt y:
+            if self.revise(var_x, var_y):
+                # If x domain is empty after revision, no solution:
+                if not self.domains[var_x]:
+                    return False
+                # If revised, add to arcs all x neighbors
+                for var_z in self.crossword.neighbors(var_x) - {var_y}:
+                    arcs.append((var_z, var_x))
+        return True
 
     def assignment_complete(self, assignment):
         """
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        raise NotImplementedError
+
+        for var in self.domains:
+            if var not in assignment:
+                return False
+        return True
 
     def consistent(self, assignment):
         """
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        raise NotImplementedError
+
+        used_variables = []
+
+        for var_x in assignment:
+            val_x = assignment[var_x]
+
+            # If the assigned word is already used, not consistent:
+            if val_x in used_variables:
+                return False
+            used_variables.append(val_x)
+
+            # Check if variable is assigned its length is correct
+            if len(val_x) != var_x.length:
+                return False
+
+            # Check if there are conflicts between neighboring variables:
+            for var_y in self.crossword.neighbors(var_x):
+                if var_y in assignment:
+                    val_y = assignment[var_y]
+
+                    # Check if neighbor variable is assigned and satisfies constraints
+                    if not self.overlap_satisfied(var_x, var_y, val_x, val_y):
+                        return False
+
+        # Otherwise all assignments are consistent
+        return True
 
     def order_domain_values(self, var, assignment):
         """
@@ -192,7 +242,9 @@ class CrosswordCreator():
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
-        raise NotImplementedError
+
+        # CURRENTLY RETURN IN ANY ORDER:
+        return [x for x in self.domains[var]]
 
     def select_unassigned_variable(self, assignment):
         """
@@ -202,7 +254,12 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        raise NotImplementedError
+
+        unassigned = set(self.domains.keys()) - set(assignment.keys())
+
+        # CURRENTLY RETURN FIRST UNASSIGNED IN ANY ORDER:
+        for var in unassigned:
+            return var
 
     def backtrack(self, assignment):
         """
@@ -213,6 +270,20 @@ class CrosswordCreator():
 
         If no assignment is possible, return None.
         """
+        """
+        function BACKTRACK(assignment, csp):
+ if assignment complete: return assignment
+ var = SELECT-UNASSIGNED-VAR(assignment, csp)
+ for value in DOMAIN-VALUES(var, assignment, csp):
+ if value consistent with assignment:
+ add {var = value} to assignment
+ inferences = INFERENCE(assignment, csp)
+ if inferences ≠ failure: add inferences to assignment
+ result = BACKTRACK(assignment, csp)
+ if result ≠ failure: return result
+ remove {var = value} and inferences from assignment
+ return failure
+ """
         raise NotImplementedError
 
 
