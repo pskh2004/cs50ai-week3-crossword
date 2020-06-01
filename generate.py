@@ -103,12 +103,16 @@ class CrosswordCreator():
         # Iterate through all variables in the crossword
         for var in self.domains:
             var_len = var.length
+            to_remove = set()
 
             # Iterate through all values in the variable's domain
             for val in self.domains[var]:
-                # If value length does not match variable length, remove value from domain
+                # If value length does not match variable length, add to values to remove
                 if len(val) != var_len:
-                    self.domains[var].remove(val)
+                    to_remove.add(val)
+
+            # Remove all invalide vals from variable domain
+            self.domains[var] = self.domains[var] - to_remove
 
     def overlap_satisfied(self, x, y, val_x, val_y):
             """
@@ -180,7 +184,7 @@ class CrosswordCreator():
                         arcs.append((var_1, var_2))
 
         # Continue until no arcs left (arc consistency enforced):
-        while arcs.length > 0:
+        while arcs:
             var_x, var_y = arcs.pop()
             # Revise x domain wrt y:
             if self.revise(var_x, var_y):
@@ -284,8 +288,21 @@ class CrosswordCreator():
  remove {var = value} and inferences from assignment
  return failure
  """
-        raise NotImplementedError
 
+        # If all variables are assigned, return assignment:
+        if self.assignment_complete(assignment):
+            return assignment
+
+        # Otherwise select an unassigned variable:
+        var = self.select_unassigned_variable(assignment)
+        for val in self.order_domain_values(var, assignment):
+            assignment[var] = val
+            if self.consistent(assignment):
+                result = self.backtrack(assignment)
+                if result:
+                    return result
+            del assignment[var]
+        return False
 
 def main():
 
