@@ -153,15 +153,15 @@ class CrosswordCreator():
         to_remove = set()
 
         # Iterate over domain of x and y, track any inconsistent x:
-        for var_x in self.domains[x]:
+        for val_x in self.domains[x]:
             consistent = False
-            for var_y in self.domains[y]:
-                if var_x != var_y and self.overlap_satisfied(x, y, var_x, var_y):
+            for val_y in self.domains[y]:
+                if val_x != val_y and self.overlap_satisfied(x, y, val_x, val_y):
                     consistent = True
                     break
 
             if not consistent:
-                to_remove.add(var_x)
+                to_remove.add(val_x)
                 revision = True
 
         # Remove any domain variables that aren't arc consistent:
@@ -266,6 +266,7 @@ class CrosswordCreator():
         # Return list of vals sorted from fewest to most other_vals ruled out:
         return sorted([x for x in vals_ruleout], key = lambda x: vals_ruleout[x])
 
+
         # SIMPLE, INEFFICIENT - RETURN IN ANY ORDER:
         #return [x for x in self.domains[var]]
 
@@ -277,6 +278,7 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
+
         # Get set of unassigned variables
         unassigned = set(self.domains.keys()) - set(assignment.keys())
 
@@ -286,8 +288,9 @@ class CrosswordCreator():
 
         return result[0]
 
+
         # SIMPLE, INEFFICIENT - RETURN ANY VARIABLE:
-        # return [var for var in unassigned][0]
+        #return [var for var in unassigned][0]
 
     def backtrack(self, assignment):
         """
