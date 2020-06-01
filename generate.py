@@ -1,7 +1,10 @@
 import sys
 
+from math import inf
 from crossword import *
 
+BACKTRACK_COUNTER = 0
+WORDS_TESTED = 0
 
 class CrosswordCreator():
 
@@ -258,12 +261,19 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-
+        # Get set of unassigned variables
         unassigned = set(self.domains.keys()) - set(assignment.keys())
 
-        # CURRENTLY RETURN FIRST UNASSIGNED IN ANY ORDER:
-        for var in unassigned:
-            return var
+        # Create list of variables, sorted by MRV and highest degree
+        result = [var for var in unassigned]
+        result.sort(key = lambda x: (len(self.domains[x]), -len(self.crossword.neighbors(x))))
+
+        #for var in unassigned:
+            #print(var, self.domains[var], self.crossword.neighbors(var))
+
+        #print(result)
+
+        return result[0]
 
     def backtrack(self, assignment):
         """
@@ -274,20 +284,10 @@ class CrosswordCreator():
 
         If no assignment is possible, return None.
         """
-        """
-        function BACKTRACK(assignment, csp):
- if assignment complete: return assignment
- var = SELECT-UNASSIGNED-VAR(assignment, csp)
- for value in DOMAIN-VALUES(var, assignment, csp):
- if value consistent with assignment:
- add {var = value} to assignment
- inferences = INFERENCE(assignment, csp)
- if inferences ≠ failure: add inferences to assignment
- result = BACKTRACK(assignment, csp)
- if result ≠ failure: return result
- remove {var = value} and inferences from assignment
- return failure
- """
+
+        global BACKTRACK_COUNTER
+        global WORDS_TESTED
+        BACKTRACK_COUNTER += 1
 
         # If all variables are assigned, return assignment:
         if self.assignment_complete(assignment):
@@ -297,12 +297,13 @@ class CrosswordCreator():
         var = self.select_unassigned_variable(assignment)
         for val in self.order_domain_values(var, assignment):
             assignment[var] = val
+            WORDS_TESTED += 1
             if self.consistent(assignment):
                 result = self.backtrack(assignment)
                 if result:
                     return result
             del assignment[var]
-        return False
+        return None
 
 def main():
 
@@ -324,6 +325,8 @@ def main():
     if assignment is None:
         print("No solution.")
     else:
+        print("Calls to backtrack function: ", BACKTRACK_COUNTER)
+        print("Words tested to find solution: ", WORDS_TESTED)
         creator.print(assignment)
         if output:
             creator.save(assignment, output)
