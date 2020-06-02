@@ -371,8 +371,8 @@ class CrosswordCreator():
 def main():
 
     # Check usage
-    if len(sys.argv) not in [3, 4, 5]:
-        sys.exit("Usage: python generate.py structure words [interleaving] [output]")
+    if len(sys.argv) not in [4, 5]:
+        sys.exit("Usage: python generate.py structure words interleaving [output]")
 
     # Parse command-line arguments
     structure = sys.argv[1]
