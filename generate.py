@@ -185,12 +185,12 @@ class CrosswordCreator():
         """
 
         # If no arcs, start with queue of all arcs:
-        if not arcs:
-            arcs = []
-            for var_1 in self.domains:
-                for var_2 in self.domains:
-                    if var_1 != var_2:
-                        arcs.append((var_1, var_2))
+       if arcs is None:
+           arcs=[]
+           for x in self.domains:
+               for var_y in self.crossword.neighbors(var_x):
+                   arcs.append((var_x,var_y))
+            
 
         # Continue until no arcs left (arc consistency enforced):
         while arcs:
